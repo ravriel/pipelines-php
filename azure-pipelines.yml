@@ -8,6 +8,15 @@ pool:
 
 variables:
   phpVersion: 7.2
+  # the name of the service connection that you created above
+  serviceConnectionToAzure: php-connection
+  # the name of your web app here is the same one you used above
+  # when you created the web app using the Azure CLI
+  appName: ron-test-php-0203
+  # the name of your functionApp is what you provided as
+  # stagingDirectory in pom.xml
+  functionAppName: 'javafunctions'
+  
 
 steps:
 - script: |
@@ -27,3 +36,26 @@ steps:
     rootFolderOrFile: '$(system.defaultWorkingDirectory)'
     includeRootFolder: false
 - task: PublishBuildArtifacts@1
+# add these as the last steps (below all the other `task` items under `steps`)
+# to deploy to your app service
+- task: ArchiveFiles@1
+  displayName: Archive files
+  inputs:
+    rootFolder: '$(System.DefaultWorkingDirectory)'
+    includeRootFolder: false
+    archiveType: 'default'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+    replaceExistingArchive: true
+
+- task: PublishBuildArtifacts@1
+  displayName: Publish Artifact
+  inputs:
+    PathtoPublish: $(build.artifactstagingdirectory)
+
+- task: AzureWebApp@1
+  displayName: Azure Web App Deploy
+  inputs:
+    azureSubscription: $(serviceConnectionToAzure)
+    appType: webAppLinux
+    appName: $(appName)
+    package: $(build.artifactstagingdirectory)/**/*.zip
